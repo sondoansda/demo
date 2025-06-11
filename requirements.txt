@@ -1,0 +1,11 @@
+opencv-python
+numpy
+pillow
+torch
+torchvision
+torchaudio
+facenet-pytorch
+mtcnn
+deepface
+pandas
+tk
