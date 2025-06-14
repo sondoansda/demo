@@ -18,7 +18,7 @@ class FaceRecognition:
         
         print(f"Loading models from: {self.train_data_dir}")
         
-        # Initialize MTCNN with optimized parameters for face detection
+        # Khởi tạo MTCNN với các tham số được tối ưu hóa để phát hiện khuôn mặt
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.detector = MTCNN(
             image_size=160,  # Kích thước chuẩn cho FaceNet
@@ -32,14 +32,14 @@ class FaceRecognition:
             select_largest=False  # Không chỉ chọn khuôn mặt lớn nhất
         )
         
-        # Initialize FaceNet model with VGGFace2 weights
+        # Khởi tạo mô hình FaceNet với trọng số VGGFace2
         self.model = InceptionResnetV1(
             pretrained='vggface2',
             classify=False,
             device=self.device
         ).eval()
         
-        # Adjust recognition parameters
+        # Điều trỉnh thông số nhận dạng
         self.recognition_threshold = 0.5  # Ngưỡng khoảng cách tối đa (confidence > 50%)
         self.min_detection_confidence = 0.9  # Ngưỡng tin cậy phát hiện khuôn mặt
         self.min_similarity = 0.8  # Độ tương đồng tối thiểu (50%)
