@@ -11,6 +11,7 @@ class FaceRecognition:
         """
         Initialize the FaceRecognition class with MTCNN detector and FaceNet model.
         """
+        
         self.db_manager = db_manager
         # Sử dụng thư mục train trong project thay vì .student_checkin
         self.train_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'train')

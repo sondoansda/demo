@@ -1,3 +1,4 @@
+# Đường dẫn: c:\Users\Dell\Desktop\demo\main.py
 import tkinter as tk
 from gui.app import StudentCheckInApp
 

@@ -1,3 +1,4 @@
+# Đường dẫn: c:\Users\Dell\Desktop\demo\gui\app.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 from data.database.db_manager import DatabaseManager
@@ -12,88 +13,88 @@ from core.face_recognition import FaceRecognition
 class StudentCheckInApp:
     def __init__(self, root):
         """
-        Initialize the main application window and its components.
+        Khởi tạo cửa sổ ứng dụng chính và các thành phần của nó.
         """
         self.root = root
-        self.root.title("Student Check-in System")
+        self.root.title("Hệ thống Điểm danh Sinh viên")
 
-        # Initialize components
+        # Khởi tạo các thành phần
         self.db_manager = DatabaseManager()
         self.face_recognition = FaceRecognition(self.db_manager)
         
         self._init_ui()
-        self.refresh_tables()  # Populate tables on startup
+        self.refresh_tables()  # Cập nhật bảng khi khởi động
         
-        # Bind window close event
+        # Gắn sự kiện đóng cửa sổ
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def _init_ui(self):
         """
-        Set up the user interface, including student registration and check-in tables.
+        Thiết lập giao diện người dùng, bao gồm bảng đăng ký sinh viên và bảng điểm danh.
         """
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # Left panel - Student registration
-        left_panel = ttk.LabelFrame(main_frame, text="Student Registration", padding="5")
+        # Panel trái - Đăng ký sinh viên
+        left_panel = ttk.LabelFrame(main_frame, text="Đăng ký Sinh viên", padding="5")
         left_panel.grid(row=0, column=0, padx=5, pady=5, sticky=(tk.W, tk.E, tk.N, tk.S))
 
         self.student_form = StudentForm(left_panel, self.refresh_tables)
         self.student_form.grid(row=0, column=0, padx=5, pady=5)
 
-        # Right panel - Tables
+        # Panel phải - Các bảng
         right_panel = ttk.Frame(main_frame)
         right_panel.grid(row=0, column=1, padx=5, pady=5, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # Registered students table
-        students_frame = ttk.LabelFrame(right_panel, text="Registered Students", padding="5")
+        # Bảng sinh viên đã đăng ký
+        students_frame = ttk.LabelFrame(right_panel, text="Sinh viên đã Đăng ký", padding="5")
         students_frame.grid(row=0, column=0, padx=5, pady=5, sticky=(tk.W, tk.E, tk.N, tk.S))
 
         self.student_table = StudentTable(students_frame)
         self.student_table.pack(fill=tk.BOTH, expand=True)
 
-        # Recent check-ins table
-        checkins_frame = ttk.LabelFrame(right_panel, text="Recent Check-ins", padding="5")
+        # Bảng điểm danh gần đây
+        checkins_frame = ttk.LabelFrame(right_panel, text="Điểm danh Gần đây", padding="5")
         checkins_frame.grid(row=1, column=0, padx=5, pady=5, sticky=(tk.W, tk.E, tk.N, tk.S))
 
         self.checkin_table = CheckinTable(checkins_frame, self.db_manager)
         self.checkin_table.pack(fill=tk.BOTH, expand=True)
 
-        # Add button frame
+        # Khung nút bấm
         button_frame = ttk.Frame(self.root)
         button_frame.grid(row=1, column=0, padx=5, pady=5)
         
-        # Single Check-in button
-        self.checkin_button = ttk.Button(button_frame, text="Check-in", command=self.start_checkin)
+        # Nút Điểm danh
+        self.checkin_button = ttk.Button(button_frame, text="Điểm danh", command=self.start_checkin)
         self.checkin_button.pack(side='left', padx=5)
 
     def start_checkin(self):
         """
-        Start the face recognition check-in process
+        Bắt đầu quá trình điểm danh bằng nhận diện khuôn mặt
         """
-        self.checkin_button.configure(state='disabled')  # Disable button while camera is running
+        self.checkin_button.configure(state='disabled')  # Vô hiệu hóa nút trong khi camera đang hoạt động
         
         try:
             self.face_recognition.face_reg_on_camera()
             # Cập nhật bảng check-in ngay sau khi camera đóng
             self.checkin_table.update_checkins()
         except Exception as e:
-            messagebox.showerror("Error", f"Check-in failed: {str(e)}")
+            messagebox.showerror("Lỗi", f"Điểm danh thất bại: {str(e)}")
         finally:
-            self.checkin_button.configure(state='normal')  # Re-enable button
+            self.checkin_button.configure(state='normal')  # Kích hoạt lại nút
             
     def refresh_tables(self):
         """
-        Refresh the student and check-in tables with the latest data from the database.
+        Làm mới các bảng sinh viên và điểm danh với dữ liệu mới nhất từ cơ sở dữ liệu.
         """
         self.student_table.update_students(self.db_manager.get_students())
-        self.checkin_table.update_checkins()  # Update the check-in table
-        # Schedule next refresh
-        self.root.after(5000, self.refresh_tables)  # Refresh every 5 seconds
+        self.checkin_table.update_checkins()  # Cập nhật bảng điểm danh
+        # Lên lịch làm mới tiếp theo
+        self.root.after(5000, self.refresh_tables)  # Làm mới mỗi 5 giây
 
     def on_closing(self):
-        """Handle application closing"""
+        """Xử lý việc đóng ứng dụng"""
         try:
-            cv2.destroyAllWindows()  # Make sure to close any open camera windows
+            cv2.destroyAllWindows()  # Đảm bảo đóng mọi cửa sổ camera đang mở
         finally:
-            self.root.destroy()  # Close the window
+            self.root.destroy()  # Đóng cửa sổ

@@ -7,18 +7,23 @@ from datetime import datetime
 from gui.loading_screen import LoadingScreen
 
 class DatabaseManager:
+    """Quản lý cơ sở dữ liệu SQLite cho hệ thống điểm danh"""
+    
     def __init__(self, db_path="student_checkin.db"):
+        """Khởi tạo kết nối đến cơ sở dữ liệu"""
         self.db_path = db_path
         self.local = threading.local()
         self._create_tables()
         self.loading_screen = None
 
     def _get_connection(self):
+        """Lấy kết nối đến cơ sở dữ liệu theo thread"""
         if not hasattr(self.local, "connection"):
             self.local.connection = sqlite3.connect(self.db_path)
         return self.local.connection
 
     def _create_tables(self):
+        """Tạo các bảng cần thiết trong cơ sở dữ liệu"""
         connection = self._get_connection()
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE IF NOT EXISTS students (
@@ -35,7 +40,7 @@ class DatabaseManager:
         connection.commit()
 
     def add_recent_checkin(self, student_id, name):
-        """Add or update check-in record for today"""
+        """Thêm hoặc cập nhật bản ghi điểm danh cho hôm nay"""
         connection = None
         try:
             connection = self._get_connection()
@@ -44,7 +49,7 @@ class DatabaseManager:
             timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
             today = now.strftime("%Y-%m-%d")
             
-            # Check if student already has a check-in today
+            # Kiểm tra xem sinh viên đã điểm danh hôm nay chưa
             cursor.execute("""
                 SELECT id FROM checkins 
                 WHERE student_id = ? AND date(timestamp) = ?
@@ -52,14 +57,14 @@ class DatabaseManager:
             existing_checkin = cursor.fetchone()
             
             if existing_checkin:
-                # Update existing check-in time
+                # Cập nhật thời gian điểm danh cho bản ghi đã tồn tại
                 cursor.execute("""
                     UPDATE checkins 
                     SET timestamp = ?
                     WHERE id = ?
                 """, (timestamp, existing_checkin[0]))
             else:
-                # Create new check-in record
+                # Tạo bản ghi điểm danh mới
                 cursor.execute("""
                     INSERT INTO checkins (student_id, timestamp)
                     VALUES (?, ?)
@@ -75,13 +80,13 @@ class DatabaseManager:
             return False
 
     def add_student(self, student_id, name, video_path):
-        # Create and show loading screen
+        # Tạo và hiển thị màn hình tải
         if hasattr(self, '_mainwindow'):
             self.loading_screen = LoadingScreen(self._mainwindow)
-            self.loading_screen.update_progress(0, "Saving student information...")
+            self.loading_screen.update_progress(0, "Đang lưu thông tin sinh viên...")
         
         try:
-            # Save student information to the database
+            # Lưu thông tin sinh viên vào cơ sở dữ liệu
             connection = self._get_connection()
             cursor = connection.cursor()
             cursor.execute('INSERT INTO students (student_id, name, video_path) VALUES (?, ?, ?)',
@@ -89,18 +94,18 @@ class DatabaseManager:
             connection.commit()
 
             if self.loading_screen:
-                self.loading_screen.update_progress(20, "Processing video frames...")
+                self.loading_screen.update_progress(20, "Đang xử lý khung hình video...")
 
-            # Create directory for training data
+            # Tạo thư mục cho dữ liệu đào tạo
             training_data_dir = os.path.join('data', 'train', student_id)
             os.makedirs(training_data_dir, exist_ok=True)
 
-            # Count total frames for progress calculation
+            # Đếm tổng số khung hình để tính toán tiến độ
             video_capture = cv2.VideoCapture(video_path)
             total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
             video_capture.release()
 
-            # Extract frames from the video and save them to the training directory
+            # Trích xuất khung hình từ video và lưu vào thư mục đào tạo
             video_capture = cv2.VideoCapture(video_path)
             frame_count = 0
             while True:
@@ -112,19 +117,19 @@ class DatabaseManager:
                 frame_count += 1
                 
                 if self.loading_screen and total_frames > 0:
-                    progress = 20 + (60 * frame_count / total_frames)  # Progress from 20% to 80%
-                    self.loading_screen.update_progress(progress, f"Processing frame {frame_count}/{total_frames}")
+                    progress = 20 + (60 * frame_count / total_frames)  # Tiến độ từ 20% đến 80%
+                    self.loading_screen.update_progress(progress, f"Đang xử lý khung hình {frame_count}/{total_frames}")
             
             video_capture.release()
 
             if self.loading_screen:
-                self.loading_screen.update_progress(80, "Training face recognition model...")
+                self.loading_screen.update_progress(80, "Đang đào tạo mô hình nhận diện khuôn mặt...")
 
-            # Trigger training process
+            # Kích hoạt quá trình đào tạo
             self._train_model(student_id)
 
             if self.loading_screen:
-                self.loading_screen.update_progress(100, "Completed!")
+                self.loading_screen.update_progress(100, "Hoàn thành!")
                 self.loading_screen.close()
 
         except Exception as e:
@@ -133,10 +138,10 @@ class DatabaseManager:
             raise e
 
     def _train_model(self, student_id):
-        print(f"Training model for student {student_id}...")
-        # Add actual training logic here if needed
+        print(f"Đang đào tạo mô hình cho sinh viên {student_id}...")
+        # Thêm logic đào tạo thực tế ở đây nếu cần
         import time
-        time.sleep(2)  # Simulate training time
+        time.sleep(2)  # Giả lập thời gian đào tạo
 
     def get_students(self):
         connection = self._get_connection()
@@ -145,7 +150,7 @@ class DatabaseManager:
         return cursor.fetchall()
 
     def get_recent_checkins(self, limit=10):
-        """Get recent check-ins with student names"""
+        """Lấy danh sách điểm danh gần đây với tên sinh viên"""
         try:
             connection = self._get_connection()
             cursor = connection.cursor()
@@ -162,7 +167,7 @@ class DatabaseManager:
             return []
 
     def get_student_name(self, student_id):
-        """Get student name from database by student ID"""
+        """Lấy tên sinh viên từ cơ sở dữ liệu theo ID sinh viên"""
         try:
             connection = self._get_connection()
             cursor = connection.cursor()
@@ -174,39 +179,39 @@ class DatabaseManager:
             return "Unknown"
 
     def delete_student(self, student_id):
-        # Delete student information from the database
+        # Xóa thông tin sinh viên khỏi cơ sở dữ liệu
         connection = self._get_connection()
         cursor = connection.cursor()
         cursor.execute('DELETE FROM students WHERE student_id = ?', (student_id,))
         connection.commit()
 
-        # Remove the student's training data directory
+        # Xóa thư mục dữ liệu đào tạo của sinh viên
         training_data_dir = os.path.join('data', 'train', student_id)
         if os.path.exists(training_data_dir):
             shutil.rmtree(training_data_dir)
-            print(f"Deleted training data for student {student_id}.")
+            print(f"Đã xóa dữ liệu đào tạo của sinh viên {student_id}.")
         else:
-            print(f"No training data found for student {student_id}.")
+            print(f"Không tìm thấy dữ liệu đào tạo của sinh viên {student_id}.")
 
     def delete_checkin_history(self, days=None):
-        """Delete check-in history. If days is provided, only delete records older than that many days"""
+        """Xóa lịch sử điểm danh. Nếu có tham số days, chỉ xóa các bản ghi cũ hơn số ngày đó"""
         try:
             connection = self._get_connection()
             cursor = connection.cursor()
             
             if days is not None:
-                # Delete records older than specified days
+                # Xóa các bản ghi cũ hơn số ngày đã chỉ định
                 cursor.execute("""
                     DELETE FROM checkins 
                     WHERE datetime(timestamp) < datetime('now', '-' || ? || ' days')
                 """, (days,))
             else:
-                # Delete all records
+                # Xóa tất cả các bản ghi
                 cursor.execute("DELETE FROM checkins")
                 
             deleted_count = cursor.rowcount
             connection.commit()
-            print(f"Deleted {deleted_count} check-in records")
+            print(f"Đã xóa {deleted_count} bản ghi điểm danh")
             return deleted_count
         except sqlite3.Error as e:
             print(f"Error deleting check-in history: {e}")
