@@ -9,3 +9,7 @@ mtcnn
 deepface
 pandas
 tk
+openpyxl
+scikit-learn
+matplotlib
+seaborn

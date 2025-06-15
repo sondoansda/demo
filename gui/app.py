@@ -1,6 +1,6 @@
 # Đường dẫn: c:\Users\Dell\Desktop\demo\gui\app.py
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from data.database.db_manager import DatabaseManager
 from gui.components.student_form import StudentForm
 from gui.components.student_table import StudentTable
@@ -8,7 +8,48 @@ from gui.components.checkin_table import CheckinTable
 import threading
 from datetime import datetime
 import cv2
+import pandas as pd
+import os
 from core.face_recognition import FaceRecognition
+
+class ExcelExporter:
+    def __init__(self, db_manager):
+        self.db_manager = db_manager
+
+    def export_attendance(self):
+        # Tạo tên file với timestamp
+        filename = f"attendance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        # Mở dialog chọn nơi lưu file
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            initialfile=filename,
+            filetypes=[("Excel files", "*.xlsx")]
+        )
+        
+        if not filepath:
+            return False
+            
+        try:
+            # Lấy dữ liệu điểm danh từ database
+            attendance_data = self.db_manager.get_all_attendance()
+            
+            if not attendance_data:
+                messagebox.showwarning("Thông báo", "Không có dữ liệu điểm danh để xuất")
+                return False
+                
+            # Chuyển đổi thành DataFrame
+            df = pd.DataFrame(attendance_data, columns=['ID', 'Họ tên', 'Thời gian điểm danh'])
+            
+            # Xuất ra file Excel
+            df.to_excel(filepath, index=False, engine='openpyxl')
+            
+            messagebox.showinfo("Thành công", f"Đã xuất dữ liệu ra file:\n{filepath}")
+            return True
+            
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Không thể xuất file Excel:\n{str(e)}")
+            return False
 
 class StudentCheckInApp:
     def __init__(self, root):
@@ -21,6 +62,7 @@ class StudentCheckInApp:
         # Khởi tạo các thành phần
         self.db_manager = DatabaseManager()
         self.face_recognition = FaceRecognition(self.db_manager)
+        self.excel_exporter = ExcelExporter(self.db_manager)
         
         self._init_ui()
         self.refresh_tables()  # Cập nhật bảng khi khởi động
@@ -67,6 +109,10 @@ class StudentCheckInApp:
         # Nút Điểm danh
         self.checkin_button = ttk.Button(button_frame, text="Điểm danh", command=self.start_checkin)
         self.checkin_button.pack(side='left', padx=5)
+        
+        # Nút Xuất Excel
+        self.export_button = ttk.Button(button_frame, text="Xuất Excel", command=self.export_to_excel)
+        self.export_button.pack(side='left', padx=5)
 
     def start_checkin(self):
         """
@@ -83,6 +129,12 @@ class StudentCheckInApp:
         finally:
             self.checkin_button.configure(state='normal')  # Kích hoạt lại nút
             
+    def export_to_excel(self):
+        """
+        Xuất dữ liệu điểm danh ra file Excel
+        """
+        self.excel_exporter.export_attendance()
+
     def refresh_tables(self):
         """
         Làm mới các bảng sinh viên và điểm danh với dữ liệu mới nhất từ cơ sở dữ liệu.

@@ -386,6 +386,53 @@ class FaceRecognition:
             return True
         return False
 
+    def get_embedding(self, student_id):
+        """
+        Lấy embedding vector của một sinh viên từ cache
+        
+        Args:
+            student_id: ID của sinh viên
+        
+        Returns:
+            numpy.ndarray: Vector embedding hoặc None nếu không tìm thấy
+        """
+        if student_id in self.known_embeddings:
+            # Trả về trung bình của tất cả embeddings của sinh viên
+            return np.mean(self.known_embeddings[student_id], axis=0)
+        return None
+
+    def compute_similarity(self, embedding1, embedding2):
+        """
+        Tính độ tương đồng giữa hai embedding vectors
+        
+        Args:
+            embedding1: Vector embedding thứ nhất
+            embedding2: Vector embedding thứ hai
+            
+        Returns:
+            float: Cosine similarity giữa hai vectors
+        """
+        # Chuyển về numpy array nếu là tensor
+        if torch.is_tensor(embedding1):
+            embedding1 = embedding1.detach().cpu().numpy()
+        if torch.is_tensor(embedding2):
+            embedding2 = embedding2.detach().cpu().numpy()
+            
+        # Reshape nếu cần
+        if len(embedding1.shape) == 1:
+            embedding1 = embedding1.reshape(1, -1)
+        if len(embedding2.shape) == 1:
+            embedding2 = embedding2.reshape(1, -1)
+            
+        # Chuẩn hóa vectors
+        embedding1_norm = embedding1 / np.linalg.norm(embedding1, axis=1, keepdims=True)
+        embedding2_norm = embedding2 / np.linalg.norm(embedding2, axis=1, keepdims=True)
+        
+        # Tính cosine similarity
+        similarity = np.dot(embedding1_norm, embedding2_norm.T)[0, 0]
+        
+        return similarity
+
 # Module-level function for face recognition camera access
 def face_reg_on_camera(db_manager=None):
     """

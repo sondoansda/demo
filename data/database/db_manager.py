@@ -216,3 +216,23 @@ class DatabaseManager:
         except sqlite3.Error as e:
             print(f"Error deleting check-in history: {e}")
             return 0
+
+    def get_all_attendance(self):
+        """Lấy tất cả các bản ghi điểm danh kèm thông tin sinh viên"""
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+            
+            query = """
+                SELECT s.student_id, s.name, c.timestamp 
+                FROM students s
+                JOIN checkins c ON s.student_id = c.student_id
+                ORDER BY c.timestamp DESC
+            """
+            
+            cursor.execute(query)
+            return cursor.fetchall()
+            
+        except sqlite3.Error as e:
+            print(f"Error getting attendance data: {e}")
+            return []
